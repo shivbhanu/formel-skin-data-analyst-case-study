@@ -17,6 +17,15 @@ Formel Skin operates a subscription-based personalised skincare model. Patients 
 | Single Purchase | €59 one-off | One-time |
 | Prescription only | €20 one-off | One-time |
 
+**Order volume by product** (29,464 orders):
+
+```mermaid
+pie title Order Volume by Product
+    "Auto-Refill 2-month (occ_bimonthly)" : 25583
+    "Auto-Refill 1-month (occ_monthly)" : 3580
+    "Single Purchase (occ_once)" : 301
+```
+
 ---
 
 ## Tasks
@@ -42,6 +51,15 @@ Formel Skin operates a subscription-based personalised skincare model. Patients 
 | Refund amount mismatch | €1,200 | 5% |
 | Invoice without order | €163 | <1% |
 | **Total gap** | **€19,500** | **0.9% of net revenue** |
+
+```mermaid
+pie title Revenue Gap by Discrepancy Type (€19,500 total)
+    "Orphan refund invoices" : 16100
+    "Currency mismatch CHF→EUR" : 3700
+    "Missing invoice" : 1200
+    "Refund amount mismatch" : 1200
+    "Invoice without order" : 163
+```
 
 **Process Improvements Recommended:**
 - Capture `refund_date` in the Orders system to align revenue recognition periods
@@ -75,6 +93,35 @@ Formel Skin operates a subscription-based personalised skincare model. Patients 
 - **27.4% of consultations are stuck**, of which 97% are payment-blocked — a revenue risk, not just an ops failure
 - **5% of orders have 3+ consultations**, consuming 3× the ops resource with highest churn probability
 
+**Resolution time: the long tail problem**
+
+```mermaid
+xychart-beta
+    title "Consultation Resolution Time"
+    x-axis ["Median (50th pct)", "P90 (90th pct)"]
+    y-axis "Hours" 0 --> 150
+    bar [12.9, 133.1]
+```
+
+**Order status breakdown** (29,464 orders):
+
+```mermaid
+pie title Order Status Distribution
+    "Paid" : 21682
+    "Partially Paid" : 7739
+    "Payment Due / Not Paid" : 43
+```
+
+**Consultation status — stuck queue is a top priority** (97,415 total):
+
+```mermaid
+pie title Consultation Status Distribution
+    "Done" : 67586
+    "Payment Pending (stuck)" : 25771
+    "Canceled / Rejected" : 2097
+    "Other blocked states" : 1961
+```
+
 ---
 
 ## Data Model (dbt-style layers)
@@ -103,10 +150,16 @@ sql/
     └── 4_mart_ops_kpis.sql                 ← Task 2
 ```
 
-**Flow:**
+**Pipeline flow:**
 
-```
-Raw CSVs → stg_ (clean) → int_ (business logic) → mart_ (BI-ready) → Looker Studio
+```mermaid
+flowchart LR
+    A[("Raw CSVs\norders · invoices\nconsultations")] --> B["stg_\nStaging\nclean + typed"]
+    B --> C["int_\nIntermediate\nbusiness logic + FX"]
+    C --> D1["mart_revenue_\nreconciliation"]
+    C --> D2["mart_ops_\nkpis"]
+    D1 --> E[("Looker Studio")]
+    D2 --> E
 ```
 
 ---
